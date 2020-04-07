@@ -1,1 +1,1 @@
-./src/dict.py $1 $2 2>/dev/null
+cd ./src/ && python ./cli_dictionary.py $1 $2 2>/dev/null
