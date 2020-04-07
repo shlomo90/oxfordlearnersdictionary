@@ -13,8 +13,8 @@ ARGS = Enum("PY", "WORD", "TYPE", "MAX", AVAILABLE=2)
 
 class DictionaryLoader(object):
     LOADABLE = {}
-    LOAD_DIR = "./dictionaries"
-    LOAD_PATH = "dictionaries."
+    LOAD_DIR = "./dictionary_modules"
+    LOAD_PATH = "dictionary_modules."
 
     def __init__(self):
         self.load_mods = {}
