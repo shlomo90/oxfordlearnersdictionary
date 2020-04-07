@@ -1,4 +1,4 @@
-#!./ox/bin/python
+#!../venv/bin/python
 
 import sys, os, re
 import requests
