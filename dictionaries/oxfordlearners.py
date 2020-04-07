@@ -25,11 +25,11 @@ class BasicDictionary(object):
         def show_word(self):
             defines = []
             for define, example in self.definitions.iteritems():
-                define = self.DEFINE_FMT.format(self.define, self.example)
+                define = self.DEFINE_FMT.format(define=define, example=example)
                 defines.append(define)
 
-            msg = self.WORD_FMT.format(self.name, self.phon,
-                                       '\n'.join(defines))
+            msg = self.WORD_FMT.format(name=self.name, phon=self.phon, define_fmt='\n'.join(defines))
+            print msg
             return msg
 
 
@@ -83,12 +83,10 @@ class Oxfordlearners(BasicDictionary):
         return top_container
 
     def find_sense_single(self, sense):
-        print "hello"
         contents = []
 
         sense_li_classes = sense.findChildren('li', {'class': 'sense'}, recursive=False)
         for sense_li_class in sense_li_classes:
-            print sense_li_class
             content = {}
             defs = sense_li_class.find('span', {'class': 'def'})
             if defs is None:
@@ -106,7 +104,6 @@ class Oxfordlearners(BasicDictionary):
                     continue
                 # TODO: some words are bold <span class="cl">...</span>
                 content['example'].append(str(example.string))
-            print "Add!"
             contents.append(content)
         return contents
 
@@ -123,7 +120,6 @@ class Oxfordlearners(BasicDictionary):
 
             for sense_li_class in sense_li_classes:
                 content = {}
-                #print sense_li_class
                 defs = sense_li_class.find('span', {'class': 'def'})
                 if defs is None:
                     continue
@@ -168,7 +164,6 @@ class Oxfordlearners(BasicDictionary):
                 sense_li_classes = sense.findChildren('li', {'class': 'sense', 'id': li_id}, recursive=False)
                 # One time
                 for sense_li_class in sense_li_classes:
-                    #print sense_li_class
                     defs = sense_li_class.find('span', {'class': 'def'})
                     if defs is None:
                         continue
@@ -186,7 +181,6 @@ class Oxfordlearners(BasicDictionary):
                         # TODO: some words are bold <span class="cl">...</span>
                         content['example'].append(str(example.string))
                     contents.append(content)
-        #print contents
         return contents
 
     def find_word(self, word):
@@ -203,15 +197,20 @@ class Oxfordlearners(BasicDictionary):
             top_container = self.find_top_container(tc)
             if top_container is None:
                 continue
-            print "{}".format(top_container)
+            break
 
         # ol class="sense_single"
         # ol class="senses_multiple"
-        print "-------------------------------------"
         single = entry_div.findChildren('ol', {'class': 'sense_single'}, recursive=False)
         multi = entry_div.findChildren('ol', {'class': 'senses_multiple'}, recursive=False)
         if single:
             contents = self.find_sense_single(single[0])
         elif multi:
             contents = self.find_senses_multiple(multi[0])
-        print contents
+
+        word_inst = super(Oxfordlearners, self).Word(word)
+        word_inst.set_phon(top_container['phon_br'] + ' ' + top_container['phon_n_am'])
+        for content in contents:
+            word_inst.set_define_example(content['def'], content['example'])
+        word_inst.show_word()
+        return word_inst
