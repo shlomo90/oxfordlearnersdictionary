@@ -5,8 +5,12 @@ from BeautifulSoup import BeautifulSoup
 class BasicDictionary(object):
     class Word:
         EXAMPLE_FMT = (' - {example}')
-        DEFINE_FMT = ('{define}\n')
-        WORD_FMT = ('{name} ({phon})\n'
+        DEFINE_FMT = ('{shcut}\n'
+                      'Define: {define}')
+        WORD_FMT = ('----------------------------------------------\n'
+                    'Name           : {name}\n'
+                    'Phonetic(br/am): {phon}\n'
+                    '----------------------------------------------\n'
                     '{define_fmt}')
 
         def __init__(self, name):
@@ -18,27 +22,35 @@ class BasicDictionary(object):
         def set_phon(self, phon):
             self.phon = phon
 
-        def set_define_example(self, define, examples):
-            self.definitions[define] = []
-            self.definitions[define] += examples
+        def set_contents(self, shcut, define, examples):
+            self.definitions[shcut] = {}
+            self.definitions[shcut][define] = []
+            self.definitions[shcut][define] += examples
 
         def show_word(self):
+
             defines = []
-            for define, examples in self.definitions.iteritems():
-                define_msgs = self.DEFINE_FMT.format(define=define)
-                msgs = []
-                for example in examples:
-                    if example == 'None':
+            for key, value in self.definitions.iteritems():
+                shcut = ''
+                if key is not None:
+                    shcut = 'Short Cut: ' + key
+
+                for define, examples in value.iteritems():
+                    define_msgs = self.DEFINE_FMT.format(shcut=shcut, define=define)
+                    msgs = []
+                    for example in examples:
+                        if example == 'None':
+                            continue
+                        msgs.append(self.EXAMPLE_FMT.format(example=example))
+                    if not msgs:
                         continue
-                    msgs.append(self.EXAMPLE_FMT.format(example=example))
-                if not msgs:
-                    continue
-                example_msgs = '\n'.join(msgs)
-                defines.append('\n'.join([define_msgs, example_msgs]))
-            msg = self.WORD_FMT.format(name=self.name, phon=self.phon,
-                                       define_fmt='\n'.join(defines))
-            print msg
-            return msg
+                    example_msgs = '\n'.join(msgs)
+                    defines.append('\n'.join([define_msgs, example_msgs]))
+                    defines.append('\n')
+            word_msg = self.WORD_FMT.format(name=self.name, phon=self.phon,
+                                            define_fmt='\n'.join(defines))
+            print word_msg
+            return word_msg
 
 
 class Oxfordlearners(BasicDictionary):
@@ -123,7 +135,9 @@ class Oxfordlearners(BasicDictionary):
         defs = li.find('span', {'class': 'def'})
         if defs is None:
             return content
-        content['def'] = str(defs.string)
+        # define may have tags
+        
+        content['def'] = str(defs.text.encode('utf-8'))
         
         examples = li.find('ul', {'class': 'examples'})
         if examples is None:
@@ -168,7 +182,7 @@ class Oxfordlearners(BasicDictionary):
         shcut_g_spans = sense.findAll('span', {'class': 'shcut-g'})
         # The case of there is no shcut_h2
         if len(shcut_g_spans) == 0:
-            contents = find_sense_single(sense)
+            contents = self.find_sense_single(sense)
         # The case of ther is shcut_h2
         else:
             for shcut_g_span in shcut_g_spans:
@@ -226,7 +240,6 @@ class Oxfordlearners(BasicDictionary):
                 continue
             break
 
-        print "top_container {}".format(top_container)
         # ol class="sense_single"
         # ol class="senses_multiple"
         single = entry_div.findChildren('ol', {'class': 'sense_single'}, recursive=False)
@@ -236,9 +249,14 @@ class Oxfordlearners(BasicDictionary):
         elif multi:
             contents = self.find_senses_multiple(multi[0])
 
-        print contents
         word_inst = super(Oxfordlearners, self).Word(word)
         word_inst.set_phon(top_container['phon_br'] + ' ' + top_container['phon_n_am'])
         for content in contents:
-            word_inst.set_define_example(content['def'], content['example'])
+            if 'def' in content and 'example' in content:
+                if 'shcut' in content:
+                    word_inst.set_contents(content['shcut'], content['def'],
+                                           content['example'])
+                else:
+                    word_inst.set_contents(None, content['def'],
+                                           content['example'])
         return word_inst
