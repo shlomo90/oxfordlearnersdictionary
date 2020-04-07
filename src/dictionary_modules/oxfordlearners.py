@@ -23,9 +23,13 @@ class BasicDictionary(object):
             self.phon = phon
 
         def set_contents(self, shcut, define, examples):
-            self.definitions[shcut] = {}
-            self.definitions[shcut][define] = []
-            self.definitions[shcut][define] += examples
+            if shcut in self.definitions:
+                self.definitions[shcut][define] = []
+                self.definitions[shcut][define] += examples
+            else:
+                self.definitions[shcut] = {}
+                self.definitions[shcut][define] = []
+                self.definitions[shcut][define] += examples
 
         def show_word(self):
 
