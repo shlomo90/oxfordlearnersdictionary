@@ -25,3 +25,9 @@ source ./dict/bin/activate
 ```
 pip install -r ./requirements.txt
 ```
+
+5. Run program
+
+```
+./search word
+```
