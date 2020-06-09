@@ -244,8 +244,6 @@ class Oxfordlearners(BasicDictionary):
                 continue
             break
 
-        # ol class="sense_single"
-        # ol class="senses_multiple"
         single = entry_div.findChildren('ol', {'class': 'sense_single'}, recursive=False)
         multi = entry_div.findChildren('ol', {'class': 'senses_multiple'}, recursive=False)
         if single:
