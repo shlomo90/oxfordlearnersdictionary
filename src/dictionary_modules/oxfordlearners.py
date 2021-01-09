@@ -218,7 +218,11 @@ class Oxfordlearners(BasicDictionary):
 
     def send_request(self, word):
         url = self.WORD_URL.format(word)
-        req = requests.get(url)
+        user_agent = {'User-Agent': ('Mozilla/5.0 '
+                                     '(Macintosh; Intel Mac OS X 10_12_1) '
+                                     'AppleWebKit/537.36 (KHTML, like Gecko) '
+                                     'Chrome/55.0.2883.75 Safari/537.36')}
+        req = requests.get(url, headers=user_agent)
         if req.status_code == 200:
             return req.content
         else:
