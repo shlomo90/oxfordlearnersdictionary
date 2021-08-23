@@ -1,5 +1,11 @@
 import requests, re
-from BeautifulSoup import BeautifulSoup
+import sys
+
+with open("/dev/null", "w") as f:
+    saved = sys.stderr
+    sys.stderr = f
+    from BeautifulSoup import BeautifulSoup
+    sys.stderr = saved
 
 
 class BasicDictionary(object):
