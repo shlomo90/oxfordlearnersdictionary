@@ -1,72 +1,23 @@
-import requests, re
-import sys
+import requests
+from dictionary.sites.basic import Word
 
+
+# Surpress warnings from BeautifulSoup.
 with open("/dev/null", "w") as f:
+    import sys
     saved = sys.stderr
     sys.stderr = f
     from BeautifulSoup import BeautifulSoup
     sys.stderr = saved
 
 
-class BasicDictionary(object):
-    class Word:
-        EXAMPLE_FMT = (' - {example}')
-        DEFINE_FMT = ('{shcut}\n'
-                      'Define: {define}')
-        WORD_FMT = ('----------------------------------------------\n'
-                    'Name           : {name}\n'
-                    'Phonetic(br/am): {phon}\n'
-                    '----------------------------------------------\n'
-                    '{define_fmt}')
-
-        def __init__(self, name):
-            self.name = name
-            self.phon = ''
-            # {definition: [example, ]}
-            self.definitions = {}
-
-        def set_phon(self, phon):
-            self.phon = phon
-
-        def set_contents(self, shcut, define, examples):
-            if shcut in self.definitions:
-                self.definitions[shcut][define] = []
-                self.definitions[shcut][define] += examples
-            else:
-                self.definitions[shcut] = {}
-                self.definitions[shcut][define] = []
-                self.definitions[shcut][define] += examples
-
-        def show_word(self):
-
-            defines = []
-            for key, value in self.definitions.iteritems():
-                shcut = ''
-                if key is not None:
-                    shcut = 'Short Cut: ' + key
-
-                for define, examples in value.iteritems():
-                    define_msgs = self.DEFINE_FMT.format(shcut=shcut, define=define)
-                    msgs = []
-                    for example in examples:
-                        if example == 'None':
-                            continue
-                        msgs.append(self.EXAMPLE_FMT.format(example=example))
-                    if not msgs:
-                        continue
-                    example_msgs = '\n'.join(msgs)
-                    defines.append('\n'.join([define_msgs, example_msgs]))
-                    defines.append('\n')
-            word_msg = self.WORD_FMT.format(name=self.name, phon=self.phon,
-                                            define_fmt='\n'.join(defines))
-            print word_msg
-            return word_msg
+WORD_URL = (
+    'https://www.oxfordlearnersdictionaries.com/'
+    'definition/english/{}'
+)
 
 
-class Oxfordlearners(BasicDictionary):
-    WORD_URL = ('https://www.oxfordlearnersdictionaries.com/'
-                'definition/english/{}')
-
+class Oxfordlearners():
     def __init__(self):
         pass
 
@@ -116,7 +67,9 @@ class Oxfordlearners(BasicDictionary):
         return top_container
 
     def extract_content_from_sense(sense):
-        sense_li_classes = sense.findChildren('li', {'class': 'sense'}, recursive=False)
+        sense_li_classes = sense.findChildren(
+            'li', {'class': 'sense'}, recursive=False)
+
         for sense_li_class in sense_li_classes:
             content = {}
             defs = sense_li_class.find('span', {'class': 'def'})
@@ -180,7 +133,8 @@ class Oxfordlearners(BasicDictionary):
                 if attr[0] == 'id':
                     # li's id = {wordname}_sng_{id}
                     # shcut's id = {wordname}_shcut_{id}
-                    # We can get the il's id from shcut's id replacing shcut to sng
+                    # We can get the il's id from shcut's id
+                    # replacing shcut to sng
                     elems = attr[1].split('_')
                     li_id = elems[0] + '_sng_' + elems[-1]
                     break
@@ -218,16 +172,21 @@ class Oxfordlearners(BasicDictionary):
                         'li', {'class': 'sense', 'id': li_id}, recursive=False)
                 # One time
                 for sense_li_class in sense_li_classes:
-                    contents.append(self.find_def_and_examples(sense_li_class,
-                                                               content))
+                    contents.append(self.find_def_and_examples(
+                        sense_li_class, content))
         return contents
 
     def send_request(self, word):
-        url = self.WORD_URL.format(word)
-        user_agent = {'User-Agent': ('Mozilla/5.0 '
-                                     '(Macintosh; Intel Mac OS X 10_12_1) '
-                                     'AppleWebKit/537.36 (KHTML, like Gecko) '
-                                     'Chrome/55.0.2883.75 Safari/537.36')}
+        url = WORD_URL.format(word)
+        user_agent = {
+            'User-Agent': (
+                'Mozilla/5.0 '
+                '(Macintosh; Intel Mac OS X 10_12_1) '
+                'AppleWebKit/537.36 (KHTML, like Gecko) '
+                'Chrome/55.0.2883.75 Safari/537.36'
+            )
+        }
+
         req = requests.get(url, headers=user_agent)
         if req.status_code == 200:
             return req.content
@@ -254,21 +213,26 @@ class Oxfordlearners(BasicDictionary):
                 continue
             break
 
-        single = entry_div.findChildren('ol', {'class': 'sense_single'}, recursive=False)
-        multi = entry_div.findChildren('ol', {'class': 'senses_multiple'}, recursive=False)
+        single = entry_div.findChildren(
+            'ol', {'class': 'sense_single'}, recursive=False)
+        multi = entry_div.findChildren(
+            'ol', {'class': 'senses_multiple'}, recursive=False)
         if single:
             contents = self.find_sense_single(single[0])
         elif multi:
             contents = self.find_senses_multiple(multi[0])
 
-        word_inst = super(Oxfordlearners, self).Word(word)
-        word_inst.set_phon(top_container['phon_br'] + ' ' + top_container['phon_n_am'])
+        word_inst = Word(word)
+        word_inst.set_phon(
+            top_container['phon_br'] + ' ' + top_container['phon_n_am'])
         for content in contents:
             if 'def' in content and 'example' in content:
                 if 'shcut' in content:
-                    word_inst.set_contents(content['shcut'], content['def'],
-                                           content['example'])
+                    word_inst.set_contents(
+                        content['shcut'], content['def'],
+                        content['example'])
                 else:
-                    word_inst.set_contents(None, content['def'],
-                                           content['example'])
+                    word_inst.set_contents(
+                        None, content['def'],
+                        content['example'])
         return word_inst
